@@ -1,8 +1,56 @@
+name: VeriFact Automated Retraining
+
+on:
+  push:
+    paths:
+      - 'new_labeled_news.csv'
+      - 'retrain.py'
+      - 'requirements.txt'
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # 3. Install libraries
+      - name: Install Libraries
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 4. Retrain model
+      - name: Retrain Model
+        run: |
+          python retrain.py
+
+      # 5. Save updated model
       - name: Save Updated Model
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+
           git add verifact_model.pkl verifact_tfidf.pkl
-          git diff --cached --quiet || git commit -m "Updated VeriFact Model"
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Updated VeriFact Model"
+          fi
+
           git pull --rebase origin main
           git push origin main
